@@ -3,10 +3,8 @@
 
 Table Of Contents:
 ----------------------------------------------------------------------------------
-* Business Problem
 * Available Data
 * ER Diagram
-* Case Study Question
 _________________________________________________________________________________________________________________________
 Available Data
 ---------------------------------------------------------------------------------
@@ -16,7 +14,6 @@ There are 2 main tables for the case study and are as follows:
 
 ER Diagram 
 ------------------------------------------------------------------------------------
+The ER Diagram for the data is as follows:
 ![Screenshot (495)](https://github.com/hemaprabhavathi20/SQL-Projects/assets/147178268/7272debd-136c-4619-a28e-574990e24fc3)
-<p align="center">
-  <img src="https://github.com/hemaprabhavathi20/SQL-Projects/raw/main/assets/147178268/7272debd-136c-4619-a28e-574990e24fc3" width="600" alt="Screenshot">
-</p>
+
