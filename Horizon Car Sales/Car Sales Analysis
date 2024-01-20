@@ -1,1 +1,300 @@
+# What are the distinct car company and models?
+SELECT DISTINCT(Company) from car
+ORDER BY COMPANY;
+
+# Count of commpany cars
+SELECT COUNT(DISTINCT Company) as total_company_cars from car;
+
+# How many models where present in each company?
+SELECT Company,
+	   Model,
+       Count(Model) Over(Partition BY  Company ORDER BY Company) as count_of_model_present
+       from car
+GROUP BY Company,
+         Model;
+		#--(OR)
+
+#MODEL HAS BEEN WRITTEN IN SINGLE COLUMN SEPARTED BY COMMA
+SELECT
+    Company,
+    GROUP_CONCAT(DISTINCT Model ) AS Models,
+    COUNT(DISTINCT Model) AS count_of_models
+FROM
+    Car
+GROUP BY
+    Company;
+
+# Company with count of models present
+SELECT  distinct(company),
+	   Count(Model) Over(Partition BY  Company ORDER BY Company) as count_of_model_present
+       from car
+GROUP BY Company,
+         Model;
+
+# color-wise sales for each year
+SELECT
+    EXTRACT(YEAR FROM Date) AS year_of_sale,
+    Color,
+    COUNT(*) AS sales_count
+FROM
+    Car
+GROUP BY
+    year_of_sale, Color
+ORDER BY
+    year_of_sale, sales_count desc;
+    
+#Dealerwise total sales
+SELECT Dealer_name,
+	count(*) AS Total_sales
+FROM
+	car
+group by
+	Dealer_name
+ORDER BY total_sales desc;
+
+# Preferred transmission by customers
+SELECT Transmission,
+       count(*) as total_sales
+       from car
+       group by transmission
+       order by total_sales desc;
+
+##Sales statistics categorized by dealer and company?
+SELECT
+    d.Dealer_name,
+	Company,
+    COUNT(Company) OVER(PARTITION BY Dealer_name ORDER BY Dealer_Name ) as total_company_dealer,
+	count(*) AS Total_sales
+FROM
+	car c
+JOIN car_dealer d ON c.Dealer_Id = d.Dealer_Id
+group by
+	d.Dealer_name,
+    Company
+ORDER BY d.Dealer_Name,
+         total_sales desc ;
+
+#Discover which product has the highest sales for every dealer.
+WITH CTE AS(
+	SELECT d.DEALER_NAME,
+		   COMPANY,
+		   count(*) AS Total_sales,
+		   DENSE_RANK() OVER(PARTITION BY Dealer_name order by count(*) desc) as rnk
+	from car c
+    JOIN car_dealer d ON c.Dealer_Id = d.Dealer_Id
+	GROUP BY 
+		   d.DEALER_NAME,
+		   COMPANY
+	ORDER BY 
+		   d.DEALER_NAME,
+		   total_sales DESC)
+           
+SELECT DEALER_NAME,
+	   COMPANY,
+       Total_sales
+       FROM CTE
+WHERE rnk=1;
+
+# the minimum and maximum prices of the Ford Company's Crown Victoria model across various dealers
+WITH cte AS (
+    SELECT
+        DISTINCT(d.Dealer_name),
+        COMPANY,
+        Model,
+        ROUND(PRICE,0) AS price,
+        MIN(ROUND(PRICE, 0)) OVER (PARTITION BY Dealer_name, Model) AS min_price,
+       MAX(ROUND(PRICE,0)) OVER (PARTITION BY Dealer_name,Model) AS max_price
+    FROM
+        Car c
+    JOIN car_dealer d ON c.Dealer_Id = d.Dealer_Id
+    WHERE
+        COMPANY = 'FORD' AND Model='Crown Victoria'
+    ORDER BY
+        d.Dealer_name, Model, PRICE
+)
+SELECT
+    *
+FROM
+    cte
+ORDER BY
+    Dealer_name, Model, PRICE;
+
+# the lowest and highest prices for Ford's model at different dealerships AND added with a condition to set the max value to NULL
+# if the dealer sells the car at a single price.
+WITH cte AS (
+    SELECT
+        DISTINCT(d.Dealer_name),
+        COMPANY,
+        Model,
+        CAST(PRICE AS Signed) AS price_of_car,
+       MIN(CAST(PRICE AS Signed)) OVER (PARTITION BY Dealer_name,Model) AS min_price,
+        CASE 
+			WHEN COUNT(*) OVER (PARTITION BY Dealer_name, Model) > 1 
+            THEN MAX(CAST(PRICE AS Signed)) OVER (PARTITION BY Dealer_name, Model) 
+            ELSE 0 END AS max_price
+    FROM
+        Car c
+    JOIN car_dealer d ON c.Dealer_Id = d.Dealer_Id
+    WHERE
+        COMPANY = 'FORD' 
+    ORDER BY
+        d.Dealer_name, Model, price_of_car
+)
+SELECT
+    *
+FROM
+    cte
+ORDER BY
+    Dealer_name, Model,price_of_car;
+
+#ENGINEWISE SALES
+SELECT EXTRACT(YEAR FROM DATE) AS YEAR_OF_PURCHASE,
+		ENGINE, 
+        COUNT(*) AS TOTAL_SALES FROM car
+GROUP BY YEAR_OF_PURCHASE,
+		 ENGINE
+ORDER BY Total_sales;
+
+#BODY STYLE WISE SALES
+SELECT EXTRACT(YEAR FROM DATE) AS YEAR_OF_PURCHASE,
+		Body_Style, 
+        COUNT(*) AS TOTAL_SALES FROM car 
+group by YEAR_OF_PURCHASE,
+		Body_Style
+order by Year_of_purchase;
+
+# TOP 10 CARS SOLD IN EACH YEAR
+WITH CTE AS(SELECT EXTRACT(YEAR FROM DATE) AS YEAR_OF_PURCHASE,
+	   COMPANY,
+       MODEL,
+       ROW_NUMBER() OVER(PARTITION BY EXTRACT(YEAR FROM DATE) ORDER BY SUM(PRICE) DESC) AS RN,
+       SUM(PRICE) AS Amount
+       from car
+GROUP BY YEAR_OF_PURCHASE,COMPANY,MODEL)
+SELECT YEAR_OF_PURCHASE,
+		COMPANY,
+        MODEL,
+        AMOUNT
+        FROM CTE
+WHERE RN<=10;
+
+#CUSTOMER ANALYSIS:
+SELECT GENDER,
+		ROUND(SUM(PRICE),0) AS AMOUNT
+        FROM car
+GROUP BY GENDER;
+ 
+-- Calculate YOY Growth in Total Sales
+WITH SalesData AS (
+    SELECT
+        EXTRACT(YEAR FROM Date) AS SaleYear,
+        SUM(Price) AS TotalSales
+    FROM
+        CAR
+    GROUP BY
+        EXTRACT(YEAR FROM Date)
+)
+
+SELECT
+    s1.SaleYear AS CurrentYear,
+    s1.TotalSales AS CurrentYearSales,
+    s2.TotalSales AS PreviousYearSales,
+	(s1.TotalSales - s2.TotalSales) AS YOYGROWTH,
+    round(((s1.TotalSales - s2.TotalSales) / s2.TotalSales) * 100,2) AS YOYGrowthPercentage
+FROM
+    SalesData s1
+JOIN
+    SalesData s2 ON s1.SaleYear = s2.SaleYear + 1;
+-- or
+SELECT
+    EXTRACT(YEAR FROM Date) AS SaleYear,
+    SUM(Price) AS Amount,
+    LAG(SUM(Price)) OVER (ORDER BY EXTRACT(YEAR FROM Date)) AS Revenue_Previous_Year,
+    SUM(Price) - LAG(SUM(Price)) OVER (ORDER BY EXTRACT(YEAR FROM Date)) AS YOY_Difference,
+    ROUND(((SUM(Price) - LAG(SUM(Price)) OVER (ORDER BY EXTRACT(YEAR FROM Date))) /
+    LAG(SUM(Price)) OVER (ORDER BY EXTRACT(YEAR FROM Date))) * 100, 2) AS YOY_Growth_Percentage
+FROM
+    car
+GROUP BY
+    SaleYear
+ORDER BY
+    SaleYear;
+
+#MOM GROWTH
+SELECT
+    EXTRACT(YEAR FROM Date) AS SaleYear,
+    EXTRACT(MONTH FROM Date) AS SaleMonth,
+    SUM(Price) AS Amount,
+    LAG(SUM(Price)) OVER (ORDER BY EXTRACT(YEAR FROM Date), EXTRACT(MONTH FROM Date)) AS Revenue_Previous_Month,
+    ROUND(SUM(Price) - LAG(SUM(Price)) OVER (ORDER BY EXTRACT(YEAR FROM Date), EXTRACT(MONTH FROM Date)), 2) AS MoM_Difference,
+    ROUND(((SUM(Price) - LAG(SUM(Price)) OVER (ORDER BY EXTRACT(YEAR FROM Date), EXTRACT(MONTH FROM Date))) / 
+       LAG(SUM(Price)) OVER (ORDER BY EXTRACT(YEAR FROM Date), EXTRACT(MONTH FROM Date))) * 100, 2) AS MoM_Growth_Percentage
+FROM
+    car
+GROUP BY
+    SaleYear, SaleMonth
+ORDER BY
+    SaleYear, SaleMonth;
+
+-- QUARTER OVER QUARTER GROWTH
+SELECT
+    EXTRACT(YEAR FROM Date) AS SaleYear,
+    EXTRACT(quarter FROM Date) AS SaleMonth,
+    SUM(Price) AS Amount,
+    LAG(SUM(Price)) OVER (ORDER BY EXTRACT(YEAR FROM Date),  EXTRACT(quarter FROM Date)) AS Revenue_Previous_Month,
+    ROUND(SUM(Price) - LAG(SUM(Price)) OVER (ORDER BY EXTRACT(YEAR FROM Date),  EXTRACT(quarter FROM Date)), 2) AS MoM_Difference,
+    ROUND(((SUM(Price) - LAG(SUM(Price)) OVER (ORDER BY EXTRACT(YEAR FROM Date),  EXTRACT(quarter FROM Date))) / 
+       LAG(SUM(Price)) OVER (ORDER BY EXTRACT(YEAR FROM Date),  EXTRACT(quarter FROM Date))) * 100, 2) AS MoM_Growth_Percentage
+FROM
+    car
+GROUP BY
+    SaleYear, SaleMonth
+ORDER BY
+    SaleYear, SaleMonth;
+
+-- YOY Growth in Average Price
+SELECT
+    EXTRACT(YEAR FROM Date) AS SaleYear,
+    AVG(Price) AS Amount,
+    LAG(Avg(Price)) OVER (ORDER BY EXTRACT(YEAR FROM Date)) AS Revenue_Previous_Year,
+    AVG(Price) - LAG(AVG(Price)) OVER (ORDER BY EXTRACT(YEAR FROM Date)) AS YOY_Difference,
+    ROUND(((AVG(Price) - LAG(AVG(Price)) OVER (ORDER BY EXTRACT(YEAR FROM Date))) /
+    LAG(AVG(Price)) OVER (ORDER BY EXTRACT(YEAR FROM Date))) * 100, 2) AS YOY_Growth_Percentage
+FROM
+    car
+GROUP BY
+    SaleYear
+ORDER BY
+    SaleYear;
+
+-- YOY SALES
+SELECT
+    EXTRACT(YEAR FROM Date) AS SaleYear,
+    count(Car_id) AS Amount,
+    LAG(COUNT(Car_id)) OVER (ORDER BY EXTRACT(YEAR FROM Date)) AS Revenue_Previous_Year,
+   count(Car_id) - LAG(count(Car_id)) OVER (ORDER BY EXTRACT(YEAR FROM Date)) AS YOY_Difference,
+    ROUND(((count(Car_id) - LAG(count(Car_id)) OVER (ORDER BY EXTRACT(YEAR FROM Date))) /
+    LAG(count(Car_id)) OVER (ORDER BY EXTRACT(YEAR FROM Date))) * 100, 2) AS YOY_Growth_Percentage
+FROM
+    car
+GROUP BY
+    SaleYear
+ORDER BY
+    SaleYear;
+   
+#MONTH OVER MONTH SALES:
+SELECT
+    EXTRACT(YEAR FROM Date) AS SaleYear,
+    EXTRACT(MONTH FROM Date) AS SaleMonth,
+   count(Car_id) AS Amount,
+    LAG(count(Car_id)) OVER (ORDER BY EXTRACT(YEAR FROM Date), EXTRACT(MONTH FROM Date)) AS Revenue_Previous_Month,
+    ROUND(count(Car_id) - LAG(count(Car_id)) OVER (ORDER BY EXTRACT(YEAR FROM Date), EXTRACT(MONTH FROM Date)), 2) AS MoM_Difference,
+    ROUND(((count(Car_id)- LAG(count(Car_id)) OVER (ORDER BY EXTRACT(YEAR FROM Date), EXTRACT(MONTH FROM Date))) / 
+       LAG(count(Car_id)) OVER (ORDER BY EXTRACT(YEAR FROM Date), EXTRACT(MONTH FROM Date))) * 100, 2) AS MoM_Growth_Percentage
+FROM
+    car
+GROUP BY
+    SaleYear, SaleMonth
+ORDER BY
+    SaleYear, SaleMonth;
 
