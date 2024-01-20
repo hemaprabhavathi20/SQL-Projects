@@ -16,4 +16,7 @@ There are 2 main tables for the case study and are as follows:
 
 ER Diagram 
 ------------------------------------------------------------------------------------
-![Screenshot (495)](https://github.com/hemaprabhavathi20/SQL-Projects/assets/147178268/7272debd-136c-4619-a28e-574990e24fc3)
+<p align="center">
+  <img src="https://github.com/hemaprabhavathi20/SQL-Projects/raw/main/assets/147178268/7272debd-136c-4619-a28e-574990e24fc3" width="650" alt="Screenshot">
+</p>
+
