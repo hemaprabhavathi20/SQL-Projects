@@ -15,6 +15,6 @@ There are 2 main tables for the case study and are as follows:
 ER Diagram 
 ------------------------------------------------------------------------------------
 The ER Diagram for the data is as follows:
-![Screenshot (608)](https://github.com/user-attachments/assets/01245e8c-604f-4231-826d-de0dbbb686cf)
+                   ![Screenshot (608)](https://github.com/user-attachments/assets/01245e8c-604f-4231-826d-de0dbbb686cf)
 
 
