@@ -16,7 +16,7 @@ Data Model
 ------------------------------------------------------------------------------------
 Data Model for the data is as follows:
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/01245e8c-604f-4231-826d-de0dbbb686cf" alt="ER Diagram" width="300" />
+  <img src="https://github.com/user-attachments/assets/01245e8c-604f-4231-826d-de0dbbb686cf" alt="ER Diagram"  />
 </p>
                   
 
